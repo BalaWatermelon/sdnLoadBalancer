@@ -23,36 +23,38 @@ from ryu.lib.packet import ethernet
 from ryu.lib.packet import ether_types
 from ryu.lib.packet import ipv4
 from ryu.lib.dpid import str_to_dpid
-import packetParser
-class PingSwitch13(app_manager.RyuApp):
+import packetparser
+class LBSwitch(app_manager.RyuApp):
 	OFP_VERSIONS = [ofproto_v1_3.OFP_VERSION]
-	WAN_PORTS = [1,2]
-	LAN_PORTS = [3,4,5]
+	
 
 	def __init__(self, *args, **kwargs):
-		super(PingSwitch13, self).__init__(*args, **kwargs)
-		pp = packetParser()
+		super(LBSwitch, self).__init__(*args, **kwargs)
+		self.pp = packetparser.packetParser()
+		self.WAN_PORTS = [1,2]
+		self.LAN_PORTS = [3,4,5]
 
-	@set_ev_cls(ofp_event.EventOFPPacketIn, CONFIG_DISPATCHER)
+	@set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
 	def packet_in_handler(self, ev):
 	    msg = ev.msg
             in_port = msg.match['in_port']
-	    
+	    print('incomming packet',in_port)
 	    # Return list of protocol object in the packet
-	    protocol_list = self.pp.parse(ev)
+	    if in_port in self.WAN_PORTS+self.LAN_PORTS:
+	    	protocol_list = self.pp.parse(ev)
 
 	    # Take action base on WANPORT and LANPORT
-	    if in_port in WAN_PORTS:
+	    if in_port in self.WAN_PORTS:
 		self.handleWAN(protocol_list)
 
-	    elif in_port in LAN_PORTS:
+	    elif in_port in self.LAN_PORTS:
 		self.handleLAN(protocol_list)
 
 	    # Drop all packet from undefined ports.
 
-	def handleWAN(protocols):
+	def handleWAN(self,protocols):
 	    print('WAN traffic')
-	def handleLAN(protocols):
+	def handleLAN(self,protocols):
 	    print('LAN traffic')
 	    
 	@set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)

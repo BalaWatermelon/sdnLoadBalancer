@@ -1,11 +1,9 @@
 from ryu.lib.packet import packet
-
+import array
 '''
  Reads openflow packetin event and parse it into a list of posible packet type.
 '''
 class packetParser():
-	def __init__(self,ev):
-		
 	def parse(self,ev):
 		pkt = packet.Packet(array.array('B', ev.msg.data))
 	    	for p in pkt:
