@@ -69,13 +69,13 @@ class PingSwitch13(app_manager.RyuApp):
 		# truncated packet data. In that case, we cannot output packets
 		# correctly.  The bug has been fixed in OVS v2.1.0.
 		
-		# table-miss default: DROP
+		# table-miss default: Controller
 		match = parser.OFPMatch()
 		actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER,
 						  ofproto.OFPCML_NO_BUFFER)]
 		inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS,actions)]
 		self.add_flow(datapath, 0, match, actions, inst)
-		
+		'''
 		if datapath.id == 1: # SWITCH 1
 
 			# Flow direct to http server.
@@ -95,7 +95,7 @@ class PingSwitch13(app_manager.RyuApp):
 			inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS,actions)]
 			self.add_flow(datapath, 0, match, actions, inst)
 			print "Flow entry added."
-
+		'''
 	def add_flow(self, datapath, priority, match, actions, inst, buffer_id=None):
 		ofproto = datapath.ofproto
 		parser = datapath.ofproto_parser
