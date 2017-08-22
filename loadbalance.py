@@ -51,7 +51,7 @@ class LBSwitch(app_manager.RyuApp):
 			self.handleWAN(protocol_list, in_port, datapath)
 
 		elif in_port in self.LAN_PORTS:
-			self.handleLAN(protocol_list)
+			self.handleLAN(protocol_list, in_port, datapath)
 
 	    # Drop all packet from undefined ports.
 
@@ -61,15 +61,31 @@ class LBSwitch(app_manager.RyuApp):
 			arp_reply = self.arper.create_reply_packet(packet)
 			self._send_packet_to_port(datapath,in_port,arp_reply.data)
 
+		# Direct http connection to random pool member
+		'''
+		for tcps in [packet for packet in protocols
+						if packet.protocol_name=='tcp' 
+						and packet.dst_port is 80]:
+		'''
+		for ips in [packet for packet in protocols
+					if packet.protocol_name=='ipv4'
+					and packet.dst == '66.66.66.6']:
+			for tcp in [packet for packet in protocols
+					if packet.protocol_name=='tcp'
+					and packet.dst_port==80]:
+				ips.dst='66.66.66.1'
+				protocols[0].dst='00:00:00:00:00:03'
+				protocols.serialize()
+				print('Modified!',protocols)
+				self._send_packet_to_port(datapath,3,protocols.data)
 		print('WAN traffic',protocols)
 
-	def handleLAN(self,protocols):
+	def handleLAN(self,protocols, in_port, datapath):
 		# Direct every arp to the only switch
 		for packet in [packet for packet in protocols if packet.protocol_name=='arp']:
 			arp_reply = self.arper.create_reply_packet(packet)
 			self._send_packet_to_port(datapath,in_port,arp_reply.data)
-
-	    print('LAN traffic')
+		print('LAN traffic')
 	    
 	@set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
 	def switch_features_handler(self, ev):
