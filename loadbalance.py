@@ -56,15 +56,19 @@ class LBSwitch(app_manager.RyuApp):
 	    # Drop all packet from undefined ports.
 
 	def handleWAN(self,protocols, in_port, datapath):
+		# Direct every arp to the only switch
 		for packet in [packet for packet in protocols if packet.protocol_name=='arp']:
 			arp_reply = self.arper.create_reply_packet(packet)
-			print('request',packet)
-			print('reply',arp_reply)
 			self._send_packet_to_port(datapath,in_port,arp_reply.data)
-			print('fake arp sent')
+
 		print('WAN traffic',protocols)
 
 	def handleLAN(self,protocols):
+		# Direct every arp to the only switch
+		for packet in [packet for packet in protocols if packet.protocol_name=='arp']:
+			arp_reply = self.arper.create_reply_packet(packet)
+			self._send_packet_to_port(datapath,in_port,arp_reply.data)
+
 	    print('LAN traffic')
 	    
 	@set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
