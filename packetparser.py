@@ -5,9 +5,7 @@ import array
 '''
 class packetParser():
 	def parse(self,ev):
-		pkt = packet.Packet(array.array('B', ev.msg.data))
-	    	for p in pkt:
-			print p.protocol_name, p
-			if p.protocol_name == 'vlan':
-		    		print 'vid = ', p.vid
-		return pkt
+		pktlist = packet.Packet(array.array('B', ev.msg.data))
+		#for p in pktlist:
+			#print p.protocol_name, p
+		return pktlist

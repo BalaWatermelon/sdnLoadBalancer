@@ -9,7 +9,7 @@ from mininet.log import setLogLevel, info
 from mininet.link import TCLink, Intf
 
 def MyNetwork(customTopo):
-	net = Mininet(topo=customTopo, build=False, link=TCLink)
+	net = Mininet(topo=customTopo, build=False, link=TCLink,autoSetMacs=True)
 	
 	info("***Adding Controller***")
 

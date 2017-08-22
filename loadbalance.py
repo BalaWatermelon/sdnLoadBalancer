@@ -24,6 +24,7 @@ from ryu.lib.packet import ether_types
 from ryu.lib.packet import ipv4
 from ryu.lib.dpid import str_to_dpid
 import packetparser
+import arper
 class LBSwitch(app_manager.RyuApp):
 	OFP_VERSIONS = [ofproto_v1_3.OFP_VERSION]
 	
@@ -33,27 +34,36 @@ class LBSwitch(app_manager.RyuApp):
 		self.pp = packetparser.packetParser()
 		self.WAN_PORTS = [1,2]
 		self.LAN_PORTS = [3,4,5]
+		self.arper = arper.arper('9e:ac:1c:7e:e1:43')
 
 	@set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
 	def packet_in_handler(self, ev):
-	    msg = ev.msg
-            in_port = msg.match['in_port']
-	    print('incomming packet',in_port)
+		msg = ev.msg
+		in_port = msg.match['in_port']
+		datapath = ev.msg.datapath
+
+		print('incomming packet',in_port)
 	    # Return list of protocol object in the packet
-	    if in_port in self.WAN_PORTS+self.LAN_PORTS:
-	    	protocol_list = self.pp.parse(ev)
-
+		if in_port in self.WAN_PORTS+self.LAN_PORTS:
+			protocol_list = self.pp.parse(ev)
 	    # Take action base on WANPORT and LANPORT
-	    if in_port in self.WAN_PORTS:
-		self.handleWAN(protocol_list)
+		if in_port in self.WAN_PORTS:
+			self.handleWAN(protocol_list, in_port, datapath)
 
-	    elif in_port in self.LAN_PORTS:
-		self.handleLAN(protocol_list)
+		elif in_port in self.LAN_PORTS:
+			self.handleLAN(protocol_list)
 
 	    # Drop all packet from undefined ports.
 
-	def handleWAN(self,protocols):
-	    print('WAN traffic')
+	def handleWAN(self,protocols, in_port, datapath):
+		for packet in [packet for packet in protocols if packet.protocol_name=='arp']:
+			arp_reply = self.arper.create_reply_packet(packet)
+			print('request',packet)
+			print('reply',arp_reply)
+			self._send_packet_to_port(datapath,in_port,arp_reply.data)
+			print('fake arp sent')
+		print('WAN traffic',protocols)
+
 	def handleLAN(self,protocols):
 	    print('LAN traffic')
 	    
@@ -103,3 +113,18 @@ class LBSwitch(app_manager.RyuApp):
 		parser = datapath.ofproto_parser
 		mod = parser.OFPFlowMod(datapath=datapath, priority=priority,match=match, instructions=inst)
 		datapath.send_msg(mod)
+
+	def _send_packet_to_port(self, dp, port, data):
+		if data is None:
+			# Do NOT sent when data is None
+			return
+		ofproto = dp.ofproto
+		parser = dp.ofproto_parser
+		actions = [parser.OFPActionOutput(port=port)]
+		# self.logger.info("packet-out %s" % (data,))
+		out = parser.OFPPacketOut(datapath=dp,
+                                  buffer_id=ofproto.OFP_NO_BUFFER,
+                                  in_port=ofproto.OFPP_CONTROLLER,
+                                  actions=actions,
+                                  data=data)
+		dp.send_msg(out)
